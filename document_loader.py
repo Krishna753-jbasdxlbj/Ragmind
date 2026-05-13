@@ -1,4 +1,4 @@
-"""document_loader.py"""
+"""document_loader.py - Improved document loading with better chunking strategy"""
 import logging
 from pathlib import Path
 from typing import List
@@ -8,8 +8,10 @@ from langchain_core.documents import Document
 
 logger = logging.getLogger(__name__)
 
-CHUNK_SIZE    = 600
-CHUNK_OVERLAP = 80
+# Increased chunk size for better context preservation
+# Larger chunks (1000-1500 tokens) maintain semantic meaning better
+CHUNK_SIZE    = 1200
+CHUNK_OVERLAP = 200
 
 def load_and_split(file_path: str) -> List[Document]:
     path = Path(file_path)
