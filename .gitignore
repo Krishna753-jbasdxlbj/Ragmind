@@ -1,6 +1,21 @@
-﻿__pycache__/
+# Python
+__pycache__/
 *.pyc
-chroma_db/
+.venv/
 venv/
+
+# Env / secrets
 .env
+.env.local
+.env.*.local
+
+# Node / frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Legacy / local artifacts
+chroma_db/
 uploads/
+*.log
+.DS_Store

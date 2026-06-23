@@ -1,0 +1,26 @@
+# RAGmind HF Space - Python deps
+
+# Web
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.7.0
+python-multipart>=0.0.9
+
+# Auth
+PyJWT>=2.8.0
+
+# Supabase (pgvector store + auth + storage)
+supabase>=2.5.0
+
+# Document loading + chunking
+langchain-community>=0.2.0
+langchain-text-splitters>=0.2.0
+langchain-core>=0.2.0
+pypdf>=4.0.0
+
+# Embeddings + reranking
+sentence-transformers>=3.0.0
+
+# LLM (GGUF via llama.cpp). CPU wheel by default; see Dockerfile for CUDA.
+llama-cpp-python>=0.2.80
+huggingface_hub>=0.23.0
