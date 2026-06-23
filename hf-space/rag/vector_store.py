@@ -9,7 +9,7 @@ Two client roles:
 import logging
 import os
 from functools import lru_cache
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from supabase import Client, create_client
 from langchain_core.documents import Document
@@ -72,7 +72,13 @@ def insert_chunks(
     return len(rows)
 
 
-def insert_message(user_id: str, document_id: str, role: str, content: str, sources=None) -> None:
+def insert_message(
+    user_id: str,
+    document_id: str,
+    role: str,
+    content: str,
+    sources: Optional[List[Dict[str, object]]] = None,
+) -> None:
     service_client().table("messages").insert(
         {
             "user_id": user_id,

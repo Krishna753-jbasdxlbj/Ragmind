@@ -60,19 +60,21 @@ def _get_owned_document(document_id: str, user_id: str) -> dict:
 
 
 @app.get("/health")
-def health():
+def health() -> dict[str, object]:
     return {"status": "ok"}
 
 
 @app.post("/index")
-def index(req: IndexRequest, background: BackgroundTasks, auth: AuthContext = Depends(require_auth)):
+def index(
+    req: IndexRequest, background: BackgroundTasks, auth: AuthContext = Depends(require_auth)
+) -> dict[str, object]:
     doc = _get_owned_document(req.document_id, auth.user_id)
     background.add_task(pipeline.index_document, auth.user_id, doc["id"], doc["storage_path"])
     return {"success": True, "status": "indexing", "document_id": doc["id"]}
 
 
 @app.post("/chat")
-def chat(req: ChatRequest, auth: AuthContext = Depends(require_auth)):
+def chat(req: ChatRequest, auth: AuthContext = Depends(require_auth)) -> dict[str, object]:
     question = (req.question or "").strip()
     if not question:
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
@@ -98,7 +100,7 @@ def chat(req: ChatRequest, auth: AuthContext = Depends(require_auth)):
 
 
 @app.on_event("startup")
-def warm_models():
+def warm_models() -> None:
     """Optionally preload the LLM so the first request isn't slow."""
     if os.environ.get("WARM_ON_START", "false").lower() == "true":
         logger.info("Warming LLM on startup ...")
