@@ -6,6 +6,12 @@ ENV PYTHONUNBUFFERED=1 \
     HF_HOME=/data/.cache/huggingface \
     SENTENCE_TRANSFORMERS_HOME=/data/.cache/sentence-transformers
 
+# The abetlen prebuilt llama-cpp wheels are linked against musl libc, but this is a
+# Debian (glibc) image. Install musl and expose it under the name libllama.so wants.
+RUN apt-get update && apt-get install -y --no-install-recommends musl \
+    && ln -sf /lib/ld-musl-x86_64.so.1 /lib/libc.musl-x86_64.so.1 \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 COPY requirements.txt .
 
