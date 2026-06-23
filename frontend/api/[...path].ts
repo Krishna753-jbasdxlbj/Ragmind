@@ -16,9 +16,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const parts = req.query.path;
-  const path = Array.isArray(parts) ? parts.join("/") : parts ?? "";
-  const url = `${SPACE.replace(/\/$/, "")}/${path}`;
+  // Derive the subpath + query from req.url (robust; doesn't depend on the
+  // catch-all param). e.g. "/api/chat?x=1" -> path "chat", search "?x=1".
+  const parsed = new URL(req.url ?? "/", "http://localhost");
+  const subPath = parsed.pathname.replace(/^\/api\/?/, "");
+  const url = `${SPACE.replace(/\/$/, "")}/${subPath}${parsed.search}`;
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${HF_TOKEN}`,
