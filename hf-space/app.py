@@ -19,6 +19,7 @@ from auth import AuthContext, require_auth
 from rag import pipeline, vector_store as vs
 from rag.embeddings import get_embedder
 from rag.reranker import get_reranker
+from rag.llm import get_llm
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s")
 logger = logging.getLogger(__name__)
@@ -112,12 +113,12 @@ def delete_document(
 
 @app.on_event("startup")
 def warm_models() -> None:
-    """Preload embedding + reranker models so the first request isn't slow.
-    (Generation runs on Groq, so there's no local LLM to warm.)"""
+    """Preload embedding, reranker, and LLM so the first request isn't slow."""
     if os.environ.get("WARM_ON_START", "true").lower() == "true":
-        logger.info("Warming embedding + reranker models on startup ...")
+        logger.info("Warming models on startup ...")
         get_embedder()
         get_reranker()
+        get_llm()
 
 
 if __name__ == "__main__":

@@ -19,7 +19,9 @@ from .llm import generate
 logger = logging.getLogger(__name__)
 
 RETRIEVER_K = int(os.environ.get("RETRIEVER_K", "8"))
-MULTI_QUERY = os.environ.get("MULTI_QUERY", "true").lower() == "true"
+# Off by default: on CPU each expansion is an extra LLM call. Reranking already
+# gives good precision; flip to "true" only on a fast (GPU) Space.
+MULTI_QUERY = os.environ.get("MULTI_QUERY", "false").lower() == "true"
 
 _PROMPT_TEMPLATE = """You are a precise document analyzer. Answer ONLY based on the provided context.
 

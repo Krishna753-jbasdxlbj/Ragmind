@@ -21,8 +21,8 @@ pypdf>=4.0.0
 # Embeddings + reranking
 sentence-transformers>=3.0.0
 
-# LLM: generation runs on Groq (OpenAI-compatible) via httpx — no local model.
-# (httpx comes in transitively via supabase.)
-
-# Model downloads for sentence-transformers
+# LLM: self-hosted GGUF via llama.cpp (private — data stays in the Space).
+# Pinned to the latest prebuilt CPU wheel (cp311) on the abetlen index; the
+# Dockerfile installs it with --only-binary so nothing compiles.
+llama-cpp-python==0.3.19
 huggingface_hub>=0.23.0
