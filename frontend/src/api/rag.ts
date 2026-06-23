@@ -2,7 +2,9 @@
 import { supabase } from "../lib/supabase";
 import type { Source } from "../types";
 
-const BASE = import.meta.env.VITE_HF_SPACE_URL as string;
+// Calls go to the same-origin Vercel proxy (/api/*), which forwards to the
+// private HF Space with the HF gating token. See frontend/api/[...path].ts.
+const BASE = "/api";
 
 async function authHeader(): Promise<Record<string, string>> {
   const { data } = await supabase.auth.getSession();

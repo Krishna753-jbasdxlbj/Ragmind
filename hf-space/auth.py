@@ -18,11 +18,21 @@ class AuthContext:
         self.token = token
 
 
-def require_auth(authorization: str = Header(None)) -> AuthContext:
-    """FastAPI dependency: validate the Bearer token, return AuthContext."""
-    if not authorization or not authorization.lower().startswith("bearer "):
+def require_auth(
+    authorization: str = Header(None),
+    x_supabase_auth: str = Header(None),
+) -> AuthContext:
+    """FastAPI dependency: validate the Supabase Bearer token, return AuthContext.
+
+    When the Space is private and reached through the Vercel proxy, the HF gating
+    token occupies the `Authorization` header, so the Supabase JWT arrives in
+    `X-Supabase-Auth`. Prefer that; fall back to `Authorization` for direct/local
+    calls to a public Space.
+    """
+    raw = x_supabase_auth or authorization
+    if not raw or not raw.lower().startswith("bearer "):
         raise HTTPException(status_code=401, detail="Missing bearer token.")
-    token = authorization.split(" ", 1)[1].strip()
+    token = raw.split(" ", 1)[1].strip()
     try:
         payload = jwt.decode(
             token,
