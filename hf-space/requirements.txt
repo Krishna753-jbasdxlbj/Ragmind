@@ -21,6 +21,7 @@ pypdf>=4.0.0
 # Embeddings + reranking
 sentence-transformers>=3.0.0
 
-# LLM (GGUF via llama.cpp). CPU wheel by default; see Dockerfile for CUDA.
-llama-cpp-python>=0.2.80
+# LLM (GGUF via llama.cpp). Pinned to the latest prebuilt CPU wheel (cp311) on the
+# abetlen index — installed in the Dockerfile with --only-binary to avoid compiling.
+llama-cpp-python==0.3.19
 huggingface_hub>=0.23.0
