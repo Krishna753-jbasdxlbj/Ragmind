@@ -72,6 +72,23 @@ def insert_chunks(
     return len(rows)
 
 
+def delete_document(document_id: str, storage_path: str) -> None:
+    """Hard-delete a document and its storage object.
+
+    chunks and messages reference documents with ON DELETE CASCADE, so deleting
+    the row removes them too. The storage object is not covered by the cascade and
+    is removed explicitly (best-effort: a missing object must not block the row
+    delete). Service role bypasses RLS; the caller is responsible for ownership.
+    """
+    client = service_client()
+    try:
+        client.storage.from_("documents").remove([storage_path])
+    except Exception:
+        logger.exception("Failed to remove storage object %s (continuing).", storage_path)
+    client.table("documents").delete().eq("id", document_id).execute()
+    logger.info("Deleted document %s.", document_id)
+
+
 def insert_message(
     user_id: str,
     document_id: str,

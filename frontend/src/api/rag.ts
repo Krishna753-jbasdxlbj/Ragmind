@@ -36,6 +36,15 @@ export async function indexDocument(documentId: string): Promise<void> {
   await handle(res);
 }
 
+/** Permanently delete a document (storage object, chunks, messages, row). */
+export async function deleteDocument(documentId: string): Promise<void> {
+  const res = await fetch(`${BASE}/document/${encodeURIComponent(documentId)}`, {
+    method: "DELETE",
+    headers: await authHeader(),
+  });
+  await handle(res);
+}
+
 /** Ask a question against an indexed document. */
 export async function chat(
   documentId: string,

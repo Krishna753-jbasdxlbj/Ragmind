@@ -11,7 +11,7 @@ The frontend uploads the PDF straight to Supabase Storage, then calls /index.
 import logging
 import os
 
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Path
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -97,6 +97,16 @@ def chat(req: ChatRequest, auth: AuthContext = Depends(require_auth)) -> dict[st
         logger.exception("Failed to persist chat turn.")
 
     return {"success": True, "answer": answer, "sources": sources}
+
+
+@app.delete("/document/{document_id}")
+def delete_document(
+    document_id: str = Path(..., min_length=1),
+    auth: AuthContext = Depends(require_auth),
+) -> dict[str, object]:
+    doc = _get_owned_document(document_id, auth.user_id)
+    vs.delete_document(doc["id"], doc["storage_path"])
+    return {"success": True, "deleted": doc["id"]}
 
 
 @app.on_event("startup")
