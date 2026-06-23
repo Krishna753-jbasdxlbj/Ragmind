@@ -14,7 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install llama-cpp-python from the prebuilt CPU wheel index (no source compile —
+# avoids OOM/timeout on small build hosts). Other deps resolve from PyPI.
+RUN pip install --no-cache-dir -r requirements.txt \
+    --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
 
 COPY . .
 
