@@ -45,20 +45,11 @@ class ChatRequest(BaseModel):
 
 
 def _get_owned_document(document_id: str, user_id: str) -> dict:
-    """Fetch a document row, enforcing ownership."""
-    resp = (
-        vs.service_client()
-        .table("documents")
-        .select("*")
-        .eq("id", document_id)
-        .eq("user_id", user_id)
-        .limit(1)
-        .execute()
-    )
-    rows = resp.data or []
-    if not rows:
+    """Fetch a document row, enforcing ownership (retries on stale connections)."""
+    doc = vs.get_owned_document(document_id, user_id)
+    if not doc:
         raise HTTPException(status_code=404, detail="Document not found.")
-    return rows[0]
+    return doc
 
 
 @app.get("/health")

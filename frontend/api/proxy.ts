@@ -1,8 +1,13 @@
 // Vercel serverless proxy → private Hugging Face Space.
+// vercel.json rewrites /api/:path* -> /api/proxy?path=:path*, so this single
+// function handles every /api/* request (nested paths included). The bracket
+// catch-all ([...path].ts) did NOT match multi-segment paths in this Vite
+// project, which 404'd /api/document/{id}.
+//
 // Browser calls same-origin /api/* with the Supabase JWT in Authorization.
-// This function injects the HF gating token (Authorization) and forwards the
-// Supabase JWT as X-Supabase-Auth, so both the HF router and our app authenticate.
-// HF_TOKEN / HF_SPACE_URL are server-side env vars (no VITE_ prefix => never sent to the browser).
+// This injects the HF gating token (Authorization) and forwards the Supabase
+// JWT as X-Supabase-Auth, so both the HF router and our app authenticate.
+// HF_TOKEN / HF_SPACE_URL are server-side env (no VITE_ prefix => never in the browser).
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 export const config = { maxDuration: 60 };
@@ -10,17 +15,22 @@ export const config = { maxDuration: 60 };
 const SPACE = process.env.HF_SPACE_URL;
 const HF_TOKEN = process.env.HF_TOKEN;
 
+function subPathOf(req: VercelRequest): string {
+  const q = req.query.path;
+  if (q) return Array.isArray(q) ? q.join("/") : q;
+  // Fallback: derive from the URL if the rewrite param is absent.
+  const parsed = new URL(req.url ?? "/", "http://localhost");
+  return parsed.pathname.replace(/^\/api\/?/, "").replace(/^proxy\/?/, "");
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!SPACE || !HF_TOKEN) {
     res.status(500).json({ detail: "Proxy missing HF_SPACE_URL or HF_TOKEN env." });
     return;
   }
 
-  // Derive the subpath + query from req.url (robust; doesn't depend on the
-  // catch-all param). e.g. "/api/chat?x=1" -> path "chat", search "?x=1".
-  const parsed = new URL(req.url ?? "/", "http://localhost");
-  const subPath = parsed.pathname.replace(/^\/api\/?/, "");
-  const url = `${SPACE.replace(/\/$/, "")}/${subPath}${parsed.search}`;
+  const path = subPathOf(req);
+  const url = `${SPACE.replace(/\/$/, "")}/${path}`;
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${HF_TOKEN}`,
