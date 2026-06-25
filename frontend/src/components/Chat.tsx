@@ -53,9 +53,29 @@ export default function Chat({ doc }: { doc: DocumentRow }) {
   const runChat = async (q: string) => {
     setBusy(true);
     setError(null);
+    // Slight backdate to tolerate clock skew between client and Supabase.
+    const since = new Date(Date.now() - 4000).toISOString();
     try {
-      const { answer, sources } = await chat(doc.id, q);
-      setMessages((m) => [...m, { role: "assistant", content: answer, sources }]);
+      await chat(doc.id, q); // enqueues; the answer is generated in the background
+      // Poll the messages table for the assistant reply (CPU generation is slow,
+      // so it can't be returned inline without tripping the proxy timeout).
+      for (let i = 0; i < 100; i++) {
+        await new Promise((r) => setTimeout(r, 2500));
+        const { data } = await supabase
+          .from("messages")
+          .select("*")
+          .eq("document_id", doc.id)
+          .eq("role", "assistant")
+          .gt("created_at", since)
+          .order("created_at", { ascending: true })
+          .limit(1);
+        if (data && data.length) {
+          const a = data[0] as MessageRow;
+          setMessages((m) => [...m, { role: "assistant", content: a.content, sources: a.sources }]);
+          return;
+        }
+      }
+      setError("This is taking longer than usual. The answer may still appear — give it a moment.");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Request failed.");
     } finally {

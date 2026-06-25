@@ -1,9 +1,8 @@
 // Client for the HF Space RAG backend. Every call carries the Supabase JWT.
 import { supabase } from "../lib/supabase";
-import type { Source } from "../types";
 
 // Calls go to the same-origin Vercel proxy (/api/*), which forwards to the
-// private HF Space with the HF gating token. See frontend/api/[...path].ts.
+// private HF Space with the HF gating token. See frontend/api/proxy.ts.
 const BASE = "/api";
 
 async function authHeader(): Promise<Record<string, string>> {
@@ -45,15 +44,14 @@ export async function deleteDocument(documentId: string): Promise<void> {
   await handle(res);
 }
 
-/** Ask a question against an indexed document. */
-export async function chat(
-  documentId: string,
-  question: string
-): Promise<{ answer: string; sources: Source[] }> {
+/** Enqueue a question. Generation runs in the background on the Space; the
+ *  assistant reply is written to the `messages` table and the UI polls for it.
+ *  (CPU generation can exceed the serverless proxy timeout, so we don't block.) */
+export async function chat(documentId: string, question: string): Promise<void> {
   const res = await fetch(`${BASE}/chat`, {
     method: "POST",
     headers: await authHeader(),
     body: JSON.stringify({ document_id: documentId, question }),
   });
-  return handle(res);
+  await handle(res);
 }

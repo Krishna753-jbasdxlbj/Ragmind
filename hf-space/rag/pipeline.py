@@ -139,3 +139,24 @@ def answer_question(jwt: str, question: str, document_id: str, filename: str) ->
     sources = _extract_sources(docs, filename)
     logger.info("Answer generated (%d chars, %d sources).", len(answer), len(sources))
     return answer, sources
+
+
+def answer_and_store(jwt: str, question: str, document_id: str, filename: str, user_id: str) -> None:
+    """Generate an answer and persist it as an assistant message.
+
+    Runs as a background task so a slow CPU generation never blocks the request
+    (and never trips the serverless proxy timeout). The frontend polls the
+    messages table for the assistant reply.
+    """
+    try:
+        answer, sources = answer_question(jwt, question, document_id, filename)
+    except Exception:
+        logger.exception("Failed to generate answer for document %s", document_id)
+        answer, sources = (
+            "Sorry — something went wrong generating the answer. Please try again.",
+            [],
+        )
+    try:
+        vs.insert_message(user_id, document_id, "assistant", answer, sources)
+    except Exception:
+        logger.exception("Failed to store assistant message for document %s", document_id)

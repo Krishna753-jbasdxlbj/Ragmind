@@ -67,7 +67,12 @@ def index(
 
 
 @app.post("/chat")
-def chat(req: ChatRequest, auth: AuthContext = Depends(require_auth)) -> dict[str, object]:
+def chat(
+    req: ChatRequest, background: BackgroundTasks, auth: AuthContext = Depends(require_auth)
+) -> dict[str, object]:
+    """Enqueue an answer. CPU generation can exceed the serverless proxy timeout,
+    so we store the question, generate in the background, write the assistant
+    reply to `messages`, and let the frontend poll for it."""
     question = (req.question or "").strip()
     if not question:
         raise HTTPException(status_code=400, detail="Question cannot be empty.")
@@ -76,20 +81,15 @@ def chat(req: ChatRequest, auth: AuthContext = Depends(require_auth)) -> dict[st
     if doc["status"] != "ready":
         raise HTTPException(status_code=409, detail=f"Document not ready (status: {doc['status']}).")
 
-    answer, sources = pipeline.answer_question(
-        jwt=auth.token,
-        question=question,
-        document_id=doc["id"],
-        filename=doc["filename"],
-    )
-    # Persist the turn (best-effort).
     try:
         vs.insert_message(auth.user_id, doc["id"], "user", question)
-        vs.insert_message(auth.user_id, doc["id"], "assistant", answer, sources)
     except Exception:
-        logger.exception("Failed to persist chat turn.")
+        logger.exception("Failed to store user message.")
 
-    return {"success": True, "answer": answer, "sources": sources}
+    background.add_task(
+        pipeline.answer_and_store, auth.token, question, doc["id"], doc["filename"], auth.user_id
+    )
+    return {"success": True, "queued": True, "document_id": doc["id"]}
 
 
 @app.delete("/document/{document_id}")
